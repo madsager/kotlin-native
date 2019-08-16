@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
+import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
@@ -282,7 +283,8 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
 
         try {
             if ((currentCodeContext as? FunctionScope)?.declaration == irFunction
-                    || (currentCodeContext as? ReturnableBlockScope)?.returnableBlock?.inlineFunctionSymbol?.owner == irFunction)
+                    || (currentCodeContext as? ReturnableBlockScope)?.returnableBlock?.inlineFunctionSymbol?.owner == irFunction
+                    || (currentCodeContext as? FunctionScope)?.declaration == irFunction)
                 return block()
             currentCodeContext = (currentCodeContext as? InnerScope)?.outerContext ?: return null
             return usingBy(irFunction, block)
@@ -296,7 +298,8 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
 
         try {
             if ((currentCodeContext as? FileScope)?.file == irFile
-                    || (currentCodeContext as? ReturnableBlockScope)?.file == irFile)
+                    || (currentCodeContext as? ReturnableBlockScope)?.file == irFile
+                    || ((currentCodeContext as? FunctionScope)?.fileScope() as? FileScope)?.file == irFile)
                 return block()
             currentCodeContext = (currentCodeContext as? InnerScope)?.outerContext ?: return null
             return usingBy(irFile, block)
@@ -1227,9 +1230,10 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
         context.log{"generateVariable               : ${ir2string(variable)}"}
         val value = variable.initializer?.let {
             val callSiteOrigin = (it as? IrBlock)?.origin as? InlinerExpressionLocationHint
-            callSiteOrigin?.run {
-                usingBy(callSiteSymbol.owner.file) {
-                    usingBy(callSiteSymbol.owner) {
+            val inlineAtFunctionSymbol = callSiteOrigin?.inlineAtSymbol as? IrFunctionSymbol
+            inlineAtFunctionSymbol?.run {
+                usingBy(inlineAtFunctionSymbol.owner.file) {
+                    usingBy(inlineAtFunctionSymbol.owner) {
                         evaluateExpression(it)
                     }
                 }

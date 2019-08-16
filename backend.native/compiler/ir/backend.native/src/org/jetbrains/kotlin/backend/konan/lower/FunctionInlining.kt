@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
+import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrReturnableBlockSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
@@ -397,7 +398,7 @@ internal class FunctionInlining(val context: Context) : IrElementTransformerVoid
 
                 val variableInitializer = it.argumentExpression.transform(substitutor, data = null)
                 val newVariable = currentScope.scope.createTemporaryVariableWithWrappedDescriptor(  // Create new variable and init it with the parameter expression.
-                        irExpression = IrBlockImpl (variableInitializer.startOffset, variableInitializer.endOffset, variableInitializer.type, InlinerExpressionLocationHint(callSite.symbol)).apply{
+                        irExpression = IrBlockImpl (variableInitializer.startOffset, variableInitializer.endOffset, variableInitializer.type, InlinerExpressionLocationHint((currentScope.irElement as IrSymbolOwner).symbol)).apply{
                             statements.add(variableInitializer)
                         },   // Arguments may reference the previous ones - substitute them.
                         nameHint = callee.symbol.owner.name.toString(),
@@ -430,6 +431,14 @@ internal class FunctionInlining(val context: Context) : IrElementTransformerVoid
     }
 }
 
-class InlinerExpressionLocationHint(val callSiteSymbol: IrFunctionSymbol) : IrStatementOrigin {
-    override fun toString(): String = "(${this.javaClass.simpleName} : ${callSiteSymbol.owner.name} @${callSiteSymbol.owner.file.fileEntry.name})"
+class InlinerExpressionLocationHint(val inlineAtSymbol: IrSymbol) : IrStatementOrigin {
+    override fun toString(): String = "(${this.javaClass.simpleName} : ${inlineAtSymbol.owner.name0} @${inlineAtSymbol.owner.file0?.fileEntry?.name})"
 }
+
+private val IrSymbolOwner.file0: IrFile?
+    get() = (this as? IrFunction)?.file
+
+private val IrSymbolOwner.name0: String
+    get() = (this as? IrFunction)?.name?.asString() ?: toString()
+
+
