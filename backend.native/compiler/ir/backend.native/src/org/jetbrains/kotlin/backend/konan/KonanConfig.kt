@@ -121,7 +121,8 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
         resolver.resolveWithDependencies(
                 unresolvedLibraries,
                 noStdLib = configuration.getBoolean(KonanConfigKeys.NOSTDLIB),
-                noDefaultLibs = configuration.getBoolean(KonanConfigKeys.NODEFAULTLIBS)).also {
+                noDefaultLibs = configuration.getBoolean(KonanConfigKeys.NODEFAULTLIBS),
+                noEndorsedLibs = configuration.getBoolean(KonanConfigKeys.NOENDORSEDLIBS)).also {
 
             validateExportedLibraries(configuration, it)
         }
