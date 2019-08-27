@@ -294,7 +294,7 @@ internal class BlockAdapterToFunctionGenerator(val objCExportCodeGenerator: ObjC
                 store(value, structGep(blockOnStackBase, index))
             }
 
-            call(context.llvm.kRefSharedHolderInitOnStack, listOf(refHolder, kotlinRef))
+            call(context.llvm.kRefSharedHolderInitLocal, listOf(refHolder, kotlinRef))
 
             val copiedBlock = callFromBridge(retainBlock, listOf(bitcast(int8TypePtr, blockOnStack)))
 

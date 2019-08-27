@@ -442,7 +442,7 @@ internal class Llvm(val context: Context, val llvmModule: LLVMModuleRef) {
     val freezeSubgraph = importRtFunction("FreezeSubgraph")
     val checkMainThread = importRtFunction("CheckIsMainThread")
 
-    val kRefSharedHolderInitOnStack = importRtFunction("KRefSharedHolder_initOnStack")
+    val kRefSharedHolderInitLocal = importRtFunction("KRefSharedHolder_initLocal")
     val kRefSharedHolderInit = importRtFunction("KRefSharedHolder_init")
     val kRefSharedHolderDispose = importRtFunction("KRefSharedHolder_dispose")
     val kRefSharedHolderRef = importRtFunction("KRefSharedHolder_ref")

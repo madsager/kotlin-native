@@ -10,7 +10,7 @@
 
 class KRefSharedHolder {
  public:
-  void initOnStack(ObjHeader* obj);
+  void initLocal(ObjHeader* obj);
 
   void init(ObjHeader* obj);
 

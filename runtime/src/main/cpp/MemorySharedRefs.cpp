@@ -8,16 +8,16 @@
 #include "MemorySharedRefs.hpp"
 #include "Runtime.h"
 
-void KRefSharedHolder::initOnStack(ObjHeader* obj) {
+void KRefSharedHolder::initLocal(ObjHeader* obj) {
   RuntimeAssert(obj != nullptr, "must not be null");
-  context_ = InitOnStackForeignRef(obj);
+  context_ = InitLocalForeignRef(obj);
   obj_ = obj;
 }
 
 void KRefSharedHolder::init(ObjHeader* obj) {
   RuntimeAssert(obj != nullptr, "must not be null");
   context_ = InitForeignRef(obj);
-  SetHeapRef(&obj_, obj);
+  obj_ = obj;
 }
 
 ObjHeader* KRefSharedHolder::ref() const {
@@ -46,7 +46,6 @@ void KRefSharedHolder::dispose() const {
     return;
   }
 
-  ReleaseForeignRef(obj_, context_);
   DeinitForeignRef(obj_, context_);
 }
 
@@ -61,7 +60,6 @@ void BackRefFromAssociatedObject::initAndAddRef(ObjHeader* obj) {
   // Generally a specialized addRef below:
   context_ = InitForeignRef(obj);
   refCount = 1;
-  AddHeapRef(obj);
 }
 
 void BackRefFromAssociatedObject::addRef() {
@@ -73,8 +71,6 @@ void BackRefFromAssociatedObject::addRef() {
     // Foreign reference has already been deinitialized (see [releaseRef]).
     // Create a new one:
     context_ = InitForeignRef(obj_);
-
-    AddHeapRef(obj_);
   }
 }
 
@@ -95,7 +91,6 @@ void BackRefFromAssociatedObject::releaseRef() {
   if (atomicAdd(&refCount, -1) == 0) {
     // Note: by this moment "subsequent" addRef may have already happened and patched context_.
     // So use the value loaded before refCount update:
-    ReleaseForeignRef(obj_, context);
     DeinitForeignRef(obj_, context);
     // From this moment [context] is generally a dangling pointer.
     // This is handled in [IsForeignRefAccessible] and [addRef].
@@ -107,8 +102,8 @@ void BackRefFromAssociatedObject::ensureRefAccessible() const {
 }
 
 extern "C" {
-RUNTIME_NOTHROW void KRefSharedHolder_initOnStack(KRefSharedHolder* holder, ObjHeader* obj) {
-  holder->initOnStack(obj);
+RUNTIME_NOTHROW void KRefSharedHolder_initLocal(KRefSharedHolder* holder, ObjHeader* obj) {
+  holder->initLocal(obj);
 }
 
 RUNTIME_NOTHROW void KRefSharedHolder_init(KRefSharedHolder* holder, ObjHeader* obj) {

@@ -21,8 +21,6 @@
 
 extern "C" {
 
-void AddHeapRef(const ObjHeader* object);
-
 bool TryAddHeapRef(const ObjHeader* object);
 
 MODEL_VARIANTS(void, ReleaseHeapRef, const ObjHeader* object);

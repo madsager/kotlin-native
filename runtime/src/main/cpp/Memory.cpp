@@ -2624,10 +2624,6 @@ ArrayHeader* ArenaContainer::PlaceArray(const TypeInfo* type_info, uint32_t coun
 extern "C" {
 
 // Private memory interface.
-void AddHeapRef(const ObjHeader* object) {
-  addHeapRef(object);
-}
-
 bool TryAddHeapRef(const ObjHeader* object) {
   return tryAddHeapRef(object);
 }
