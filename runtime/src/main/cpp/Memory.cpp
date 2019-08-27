@@ -1593,13 +1593,15 @@ void deinitInstanceBody(const TypeInfo* typeInfo, void* body) {
   }
 }
 
-ForeignRefManager* initOnStackForeignRef(ObjHeader* object) {
+ForeignRefManager* initLocalForeignRef(ObjHeader* object) {
   if (!IsStrictMemoryModel) return nullptr;
 
   return memoryState->foreignRefManager;
 }
 
 ForeignRefManager* initForeignRef(ObjHeader* object) {
+  addHeapRef(object);
+
   if (!IsStrictMemoryModel) return nullptr;
 
   if (isShareable(object->container())) {
@@ -1609,11 +1611,6 @@ ForeignRefManager* initForeignRef(ObjHeader* object) {
     manager->addRef();
     return manager;
   }
-}
-
-void deinitForeignRef(ObjHeader* object, ForeignRefManager* manager) {
-  if (manager != nullptr)
-    manager->releaseRef();
 }
 
 bool isForeignRefAccessible(ObjHeader* object, ForeignRefManager* manager) {
@@ -1628,15 +1625,18 @@ bool isForeignRefAccessible(ObjHeader* object, ForeignRefManager* manager) {
   return isShareable(object->container());
 }
 
-void releaseForeignRef(ObjHeader* object, ForeignRefManager* manager) {
+void deinitForeignRef(ObjHeader* object, ForeignRefManager* manager) {
   if (IsStrictMemoryModel) {
     if (memoryState != nullptr && isForeignRefAccessible(object, manager)) {
       releaseHeapRef<true>(object);
     } else {
       manager->enqueueReleaseRef(object);
     }
+
+    if (manager != nullptr) manager->releaseRef();
   } else {
     releaseHeapRef<false>(object);
+    RuntimeAssert(manager == nullptr, "must be null");
   }
 }
 
@@ -2643,8 +2643,8 @@ void DeinitInstanceBody(const TypeInfo* typeInfo, void* body) {
   deinitInstanceBody(typeInfo, body);
 }
 
-ForeignRefContext InitOnStackForeignRef(ObjHeader* object) {
-  return initOnStackForeignRef(object);
+ForeignRefContext InitLocalForeignRef(ObjHeader* object) {
+  return initLocalForeignRef(object);
 }
 
 ForeignRefContext InitForeignRef(ObjHeader* object) {
@@ -2653,10 +2653,6 @@ ForeignRefContext InitForeignRef(ObjHeader* object) {
 
 void DeinitForeignRef(ObjHeader* object, ForeignRefContext context) {
   deinitForeignRef(object, context);
-}
-
-void ReleaseForeignRef(ObjHeader* object, ForeignRefContext context) {
-  releaseForeignRef(object, context);
 }
 
 bool IsForeignRefAccessible(ObjHeader* object, ForeignRefContext context) {
