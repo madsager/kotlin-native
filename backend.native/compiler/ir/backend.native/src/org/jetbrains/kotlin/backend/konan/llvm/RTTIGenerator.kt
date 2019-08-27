@@ -82,6 +82,8 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
             packageName: String?,
             relativeName: String?,
             flags: Int,
+            left: Int,
+            right: Int,
             writableTypeInfo: ConstPointer?,
             associatedObjects: ConstPointer?) :
 
@@ -111,6 +113,8 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
                     kotlinStringLiteral(relativeName),
 
                     Int32(flags),
+
+                    Int32(left), Int32(right),
 
                     *listOfNotNull(writableTypeInfo).toTypedArray(),
 
@@ -208,6 +212,7 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
 
         val reflectionInfo = getReflectionInfo(irClass)
         val typeInfoGlobal = llvmDeclarations.typeInfoGlobal
+        val hierarchyInfo = context.getLayoutBuilder(irClass).hierarchyInfo
         val typeInfo = TypeInfo(
                 irClass.typeInfoPtr,
                 makeExtendedInfo(irClass),
@@ -219,6 +224,7 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
                 reflectionInfo.packageName,
                 reflectionInfo.relativeName,
                 flagsFromClass(irClass),
+                hierarchyInfo.left, hierarchyInfo.right,
                 llvmDeclarations.writableTypeInfoGlobal?.pointer,
                 associatedObjects = genAssociatedObjects(irClass)
         )
@@ -399,6 +405,7 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
                 packageName = reflectionInfo.packageName,
                 relativeName = reflectionInfo.relativeName,
                 flags = flagsFromClass(irClass) or (if (immutable) TF_IMMUTABLE else 0),
+                left = 0, right = 0, // Valid intervals start with 1.
                 writableTypeInfo = writableTypeInfo,
                 associatedObjects = null
               ), vtable)

@@ -115,6 +115,8 @@ struct TypeInfo {
     // Various flags.
     int32_t flags_;
 
+    int32_t left_, right_;
+
 #if KONAN_TYPE_INFO_HAS_WRITABLE_PART
     WritableTypeInfo* writableInfo_;
 #endif

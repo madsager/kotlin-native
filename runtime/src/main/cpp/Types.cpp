@@ -38,16 +38,17 @@ KBoolean IsInstance(const ObjHeader* obj, const TypeInfo* type_info) {
   return obj_type_info != nullptr;
 }
 
+KBoolean IsInstanceOfClassFast(const ObjHeader* obj, int32_t left, int32_t right) {
+  // We assume null check is handled by caller.
+  RuntimeAssert(obj != nullptr, "must not be null");
+  const TypeInfo* obj_type_info = obj->type_info();
+  // Super type's interval should contain our interval.
+  return obj_type_info->left_ >= left && obj_type_info->right_ <= right;
+}
+
 KBoolean IsArray(KConstRef obj) {
   RuntimeAssert(obj != nullptr, "Object must not be null");
   return obj->type_info()->instanceSize_ < 0;
-}
-
-void CheckInstance(const ObjHeader* obj, const TypeInfo* type_info) {
-  if (IsInstance(obj, type_info)) {
-    return;
-  }
-  ThrowClassCastException(obj, type_info);
 }
 
 KBoolean Kotlin_TypeInfo_isInstance(KConstRef obj, KNativePtr typeInfo) {

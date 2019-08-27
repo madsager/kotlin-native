@@ -12,9 +12,13 @@ import org.jetbrains.kotlin.backend.konan.llvm.functionName
 import org.jetbrains.kotlin.backend.konan.llvm.localHash
 import org.jetbrains.kotlin.backend.konan.lower.bridgeTarget
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
+import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
+import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.name.FqName
 
 internal class OverriddenFunctionInfo(
@@ -74,6 +78,49 @@ internal class OverriddenFunctionInfo(
         var result = function.hashCode()
         result = 31 * result + overriddenFunction.hashCode()
         return result
+    }
+}
+
+internal class ClassGlobalHierarchyInfo(val left: Int, val right: Int)
+
+internal class GlobalHierarchyAnalysis(val context: Context) {
+    fun run() {
+        val root = context.irBuiltIns.anyClass.owner
+        val immediateInheritors = mutableMapOf<IrClass, MutableList<IrClass>>()
+        val allClasses = mutableListOf<IrClass>()
+        context.irModule!!.acceptVoid(object: IrElementVisitorVoid {
+            override fun visitElement(element: IrElement) {
+                element.acceptChildrenVoid(this)
+            }
+
+            override fun visitClass(declaration: IrClass) {
+                if (declaration.isInterface)
+                    context.getLayoutBuilder(declaration).hierarchyInfo = ClassGlobalHierarchyInfo(0, 0)
+                else {
+                    allClasses += declaration
+                    if (declaration != root) {
+                        val superClass = declaration.getSuperClassNotAny() ?: root
+                        val inheritors = immediateInheritors.getOrPut(superClass) { mutableListOf() }
+                        inheritors.add(declaration)
+                    }
+                }
+                super.visitClass(declaration)
+            }
+        })
+        val enterTimes = mutableMapOf<IrClass, Int>()
+        val exitTimes = mutableMapOf<IrClass, Int>()
+        var time = 1
+
+        fun dfs(irClass: IrClass) {
+            enterTimes[irClass] = time++
+            immediateInheritors[irClass]?.forEach { dfs(it) }
+            exitTimes[irClass] = time
+        }
+
+        dfs(root)
+        allClasses.forEach {
+            context.getLayoutBuilder(it).hierarchyInfo = ClassGlobalHierarchyInfo(enterTimes[it]!!, exitTimes[it]!!)
+        }
     }
 }
 
@@ -217,6 +264,8 @@ internal class ClassLayoutBuilder(val irClass: IrClass, val context: Context) {
 
         result
     }
+
+    lateinit var hierarchyInfo: ClassGlobalHierarchyInfo
 
     /**
      * Fields declared in the class.
