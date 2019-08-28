@@ -123,12 +123,12 @@ internal class GlobalHierarchyAnalysis(val context: Context) {
                 super.visitClass(declaration)
             }
         })
-        var time = 1
+        var time = 0
 
         fun dfs(irClass: IrClass) {
+            ++time
             // Make the Any's interval's left border -1 in order to correctly generate classes for ObjC blocks.
             val enterTime = if (irClass == root) -1 else time
-            ++time
             immediateInheritors[irClass]?.forEach { dfs(it) }
             val exitTime = time
             context.getLayoutBuilder(irClass).hierarchyInfo = ClassGlobalHierarchyInfo(enterTime, exitTime)
