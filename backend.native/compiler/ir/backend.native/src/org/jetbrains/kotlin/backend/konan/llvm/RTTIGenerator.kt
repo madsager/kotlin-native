@@ -82,8 +82,7 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
             packageName: String?,
             relativeName: String?,
             flags: Int,
-            classIdLo: Int,
-            classIdHi: Int,
+            classId: Int,
             writableTypeInfo: ConstPointer?,
             associatedObjects: ConstPointer?) :
 
@@ -114,7 +113,7 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
 
                     Int32(flags),
 
-                    Int32(classIdLo), Int32(classIdHi),
+                    Int32(classId),
 
                     *listOfNotNull(writableTypeInfo).toTypedArray(),
 
@@ -212,7 +211,10 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
 
         val reflectionInfo = getReflectionInfo(irClass)
         val typeInfoGlobal = llvmDeclarations.typeInfoGlobal
-        val hierarchyInfo = context.getLayoutBuilder(irClass).hierarchyInfo
+        val hierarchyInfo =
+                if (context.shouldOptimize())
+                    context.getLayoutBuilder(irClass).hierarchyInfo
+                else ClassGlobalHierarchyInfo.DUMMY
         val typeInfo = TypeInfo(
                 irClass.typeInfoPtr,
                 makeExtendedInfo(irClass),
@@ -224,7 +226,7 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
                 reflectionInfo.packageName,
                 reflectionInfo.relativeName,
                 flagsFromClass(irClass),
-                hierarchyInfo.classIdLo, hierarchyInfo.classIdHi,
+                hierarchyInfo.classIdLo,
                 llvmDeclarations.writableTypeInfoGlobal?.pointer,
                 associatedObjects = genAssociatedObjects(irClass)
         )
@@ -394,6 +396,10 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
         val typeInfoWithVtableType = structType(runtime.typeInfoType, vtable.llvmType)
         val typeInfoWithVtableGlobal = staticData.createGlobal(typeInfoWithVtableType, "", isExported = false)
         val result = typeInfoWithVtableGlobal.pointer.getElementPtr(0)
+        val typeHierarchyInfo = if (!context.shouldOptimize())
+            ClassGlobalHierarchyInfo.DUMMY
+        else
+            ClassGlobalHierarchyInfo(-1, -1)
         val typeInfoWithVtable = Struct(TypeInfo(
                 selfPtr = result,
                 extendedInfo = NullPointer(runtime.extendedTypeInfoType),
@@ -405,7 +411,7 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
                 packageName = reflectionInfo.packageName,
                 relativeName = reflectionInfo.relativeName,
                 flags = flagsFromClass(irClass) or (if (immutable) TF_IMMUTABLE else 0),
-                classIdLo = 0, classIdHi = 0, // Valid ids start with 1.
+                classId = typeHierarchyInfo.classIdLo,
                 writableTypeInfo = writableTypeInfo,
                 associatedObjects = null
               ), vtable)

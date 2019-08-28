@@ -81,7 +81,11 @@ internal class OverriddenFunctionInfo(
     }
 }
 
-internal class ClassGlobalHierarchyInfo(val classIdLo: Int, val classIdHi: Int)
+internal class ClassGlobalHierarchyInfo(val classIdLo: Int, val classIdHi: Int) {
+    companion object {
+        val DUMMY = ClassGlobalHierarchyInfo(0, 0)
+    }
+}
 
 internal class GlobalHierarchyAnalysis(val context: Context) {
     fun run() {
@@ -93,6 +97,9 @@ internal class GlobalHierarchyAnalysis(val context: Context) {
          * then the following claim holds for any two vertices v and w:
          * ----- v is ancestor of w iff interval(v) contains interval(w) ------
          * Now apply this idea to the classes hierarchy tree and we'll get a fast type check.
+         *
+         * And one more observation: for each pair of intervals they either don't intersect or
+         * one contains the other. With that in mind, we can save in a type info only one end of an interval.
          */
         val root = context.irBuiltIns.anyClass.owner
         val immediateInheritors = mutableMapOf<IrClass, MutableList<IrClass>>()
@@ -119,7 +126,9 @@ internal class GlobalHierarchyAnalysis(val context: Context) {
         var time = 1
 
         fun dfs(irClass: IrClass) {
-            val enterTime = time++
+            // Make the Any's interval's left border -1 in order to correctly generate classes for ObjC blocks.
+            val enterTime = if (irClass == root) -1 else time
+            ++time
             immediateInheritors[irClass]?.forEach { dfs(it) }
             val exitTime = time
             context.getLayoutBuilder(irClass).hierarchyInfo = ClassGlobalHierarchyInfo(enterTime, exitTime)

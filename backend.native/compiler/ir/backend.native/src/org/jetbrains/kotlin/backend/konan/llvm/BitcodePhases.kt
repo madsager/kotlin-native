@@ -39,7 +39,8 @@ internal val RTTIPhase = makeKonanModuleOpPhase(
         name = "RTTI",
         description = "RTTI generation",
         op = { context, irModule ->
-            GlobalHierarchyAnalysis(context).run()
+            if (context.shouldOptimize())
+                GlobalHierarchyAnalysis(context).run()
             irModule.acceptVoid(RTTIGeneratorVisitor(context))
         }
 )

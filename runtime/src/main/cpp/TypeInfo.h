@@ -116,7 +116,7 @@ struct TypeInfo {
     int32_t flags_;
 
     // Class id built with the whole class hierarchy taken into account. The details are in ClassLayoutBuilder.
-    int32_t classIdLo_, classIdHi_;
+    int32_t classId_;
 
 #if KONAN_TYPE_INFO_HAS_WRITABLE_PART
     WritableTypeInfo* writableInfo_;
