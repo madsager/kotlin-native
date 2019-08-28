@@ -82,8 +82,8 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
             packageName: String?,
             relativeName: String?,
             flags: Int,
-            left: Int,
-            right: Int,
+            classIdLo: Int,
+            classIdHi: Int,
             writableTypeInfo: ConstPointer?,
             associatedObjects: ConstPointer?) :
 
@@ -114,7 +114,7 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
 
                     Int32(flags),
 
-                    Int32(left), Int32(right),
+                    Int32(classIdLo), Int32(classIdHi),
 
                     *listOfNotNull(writableTypeInfo).toTypedArray(),
 
@@ -224,7 +224,7 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
                 reflectionInfo.packageName,
                 reflectionInfo.relativeName,
                 flagsFromClass(irClass),
-                hierarchyInfo.left, hierarchyInfo.right,
+                hierarchyInfo.classIdLo, hierarchyInfo.classIdHi,
                 llvmDeclarations.writableTypeInfoGlobal?.pointer,
                 associatedObjects = genAssociatedObjects(irClass)
         )
@@ -405,7 +405,7 @@ internal class RTTIGenerator(override val context: Context) : ContextUtils {
                 packageName = reflectionInfo.packageName,
                 relativeName = reflectionInfo.relativeName,
                 flags = flagsFromClass(irClass) or (if (immutable) TF_IMMUTABLE else 0),
-                left = 0, right = 0, // Valid intervals start with 1.
+                classIdLo = 0, classIdHi = 0, // Valid ids start with 1.
                 writableTypeInfo = writableTypeInfo,
                 associatedObjects = null
               ), vtable)

@@ -81,10 +81,19 @@ internal class OverriddenFunctionInfo(
     }
 }
 
-internal class ClassGlobalHierarchyInfo(val left: Int, val right: Int)
+internal class ClassGlobalHierarchyInfo(val classIdLo: Int, val classIdHi: Int)
 
 internal class GlobalHierarchyAnalysis(val context: Context) {
     fun run() {
+        /*
+         * Here's the explanation of what's happening here:
+         * Given a tree we can traverse it with the DFS and save for each vertex two times:
+         * the enter time (the first time we saw this vertex) and the exit time (the last time we saw it).
+         * It turns out that if we assign then for each vertex the interval (enterTime, exitTime),
+         * then the following claim holds for any two vertices v and w:
+         * ----- v is ancestor of w iff interval(v) contains interval(w) ------
+         * Now apply this idea to the classes hierarchy tree and we'll get a fast type check.
+         */
         val root = context.irBuiltIns.anyClass.owner
         val immediateInheritors = mutableMapOf<IrClass, MutableList<IrClass>>()
         val allClasses = mutableListOf<IrClass>()

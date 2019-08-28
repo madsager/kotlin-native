@@ -1343,7 +1343,7 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
         return if (context.shouldOptimize() && !dstClass.isInterface) {
             val dstHierarchyInfo = context.getLayoutBuilder(dstClass).hierarchyInfo
             call(context.llvm.isInstanceOfClassFastFunction,
-                    listOf(srcObjInfoPtr, Int32(dstHierarchyInfo.left).llvm, Int32(dstHierarchyInfo.right).llvm))
+                    listOf(srcObjInfoPtr, Int32(dstHierarchyInfo.classIdLo).llvm, Int32(dstHierarchyInfo.classIdHi).llvm))
         } else {
             val dstTypeInfo = codegen.typeInfoValue(dstClass)
             call(context.llvm.isInstanceFunction, listOf(srcObjInfoPtr, dstTypeInfo))
