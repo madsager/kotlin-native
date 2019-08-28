@@ -116,20 +116,16 @@ internal class GlobalHierarchyAnalysis(val context: Context) {
                 super.visitClass(declaration)
             }
         })
-        val enterTimes = mutableMapOf<IrClass, Int>()
-        val exitTimes = mutableMapOf<IrClass, Int>()
         var time = 1
 
         fun dfs(irClass: IrClass) {
-            enterTimes[irClass] = time++
+            val enterTime = time++
             immediateInheritors[irClass]?.forEach { dfs(it) }
-            exitTimes[irClass] = time
+            val exitTime = time
+            context.getLayoutBuilder(irClass).hierarchyInfo = ClassGlobalHierarchyInfo(enterTime, exitTime)
         }
 
         dfs(root)
-        allClasses.forEach {
-            context.getLayoutBuilder(it).hierarchyInfo = ClassGlobalHierarchyInfo(enterTimes[it]!!, exitTimes[it]!!)
-        }
     }
 }
 
